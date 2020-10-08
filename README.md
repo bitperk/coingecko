@@ -12,6 +12,6 @@ func main(){
 
   // Pass ID to MarketValue method
   // Refer to coingecko.com/api for list of ids
-  coingecko.Instance().MarketValue("ripple")
+  coingecko.MarketValue("ripple")
 }
 ```

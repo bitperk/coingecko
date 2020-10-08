@@ -30,24 +30,16 @@ type Value struct {
 	USD float32 `json:"usd"`
 }
 
-// Service .
-type Service interface {
-	MarketValue(id string) Value
-}
-
-// Coingecko .
-type Coingecko struct{}
-
-// MarketValue .
-func (*Coingecko) MarketValue(id string) Value {
-	if _, ok := cache.values[id]; !ok {
-		updateCache(defaultCoinIDs+","+id, defaultVSCurrencies)
-		return cache.values[id]
+// MarketValue returns EUR and USD values for passed cryptocurrecny
+func MarketValue(cryptocurrency string) Value {
+	if _, ok := cache.values[cryptocurrency]; !ok {
+		updateCache(defaultCoinIDs+","+cryptocurrency, defaultVSCurrencies)
+		return cache.values[cryptocurrency]
 	}
 	if timeDelta := time.Now().Sub(cache.Timestamp); timeDelta >= time.Minute*5 {
-		updateCache(defaultCoinIDs+","+id, defaultVSCurrencies)
+		updateCache(defaultCoinIDs+","+cryptocurrency, defaultVSCurrencies)
 	}
-	return cache.values[id]
+	return cache.values[cryptocurrency]
 }
 
 func updateCache(ids, vsCurrencies string) {
@@ -80,15 +72,11 @@ func updateCache(ids, vsCurrencies string) {
 	}
 }
 
-var c *Coingecko
-
-// Instance returns coingecko service instance
-func Instance() Service {
-	return c
-}
-
-// Init .
+// Init populates cache with default cryptocurrency values
+//
+// defaultCoinIDs = ripple, ethereum, tron, neo
+//
+// defaultVSCurrencies = eur, usd
 func Init() {
-	c = &Coingecko{}
 	updateCache(defaultCoinIDs, defaultVSCurrencies)
 }
