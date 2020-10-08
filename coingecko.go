@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -13,8 +14,8 @@ var api = "https://api.coingecko.com/api/v3"
 
 var simplePriceEndpoint = "/simple/price"
 
-var defaultCoinIDs = "ripple,ethereum,tron,neo"
-var defaultVSCurrencies = "eur,usd"
+var coinIDs = []string{"ripple", "ethereum", "tron", "neo"}
+var vsCurrencies = []string{"eur", "usd"}
 
 var cache = struct {
 	Timestamp time.Time
@@ -30,19 +31,42 @@ type Value struct {
 	USD float32 `json:"usd"`
 }
 
-// MarketValue returns EUR and USD values for passed cryptocurrecny
+// MarketValue returns EUR and USD values for passed cryptocurrency
 func MarketValue(cryptocurrency string) Value {
 	if _, ok := cache.values[cryptocurrency]; !ok {
-		updateCache(defaultCoinIDs+","+cryptocurrency, defaultVSCurrencies)
+		AddCoinID(cryptocurrency)
+		updateCache()
 		return cache.values[cryptocurrency]
 	}
 	if timeDelta := time.Now().Sub(cache.Timestamp); timeDelta >= time.Minute*5 {
-		updateCache(defaultCoinIDs+","+cryptocurrency, defaultVSCurrencies)
+		updateCache()
 	}
 	return cache.values[cryptocurrency]
 }
 
-func updateCache(ids, vsCurrencies string) {
+// AddCoinID to list of coins for getting market value
+func AddCoinID(id string) {
+	coinIDs = append(coinIDs, id)
+}
+
+// AddVsCurrency to list of vs_currencies for getting market value
+// func AddVsCurrency(vsCurrency string) {
+// 	vsCurrencies = append(vsCurrencies, vsCurrency)
+// }
+
+// RemoveCoinID removes passed crypto id from list of coinIDs
+func RemoveCoinID(id string) {
+	index := indexOf(id, coinIDs)
+	coinIDs = append(coinIDs[:index], coinIDs[index+1:]...)
+}
+
+// RemoveVsCurrency removes passed vs_currency id from list of vs_currencies
+// func RemoveVsCurrency(vsCurrency string) {
+// 	index := indexOf(vsCurrency, coinIDs)
+// 	coinIDs = append(vsCurrencies[:index], vsCurrencies[index+1:]...)
+// }
+
+func updateCache() {
 	req, err := http.NewRequest("GET", api+simplePriceEndpoint, nil)
 	if err != nil {
 		log.Errorln(err)
@@ -50,8 +74,8 @@ func updateCache(ids, vsCurrencies string) {
 	}
 
 	q := req.URL.Query()
-	q.Add("ids", ids)
-	q.Add("vs_currencies", vsCurrencies)
+	q.Add("ids", strings.Join(coinIDs, ","))
+	q.Add("vs_currencies", strings.Join(vsCurrencies, ","))
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := http.DefaultClient.Do(req)
@@ -78,5 +102,14 @@ func updateCache(ids, vsCurrencies string) {
 //
 // defaultVSCurrencies = eur, usd
 func Init() {
-	updateCache(defaultCoinIDs, defaultVSCurrencies)
+	updateCache()
+}
+
+func indexOf(element string, data []string) int {
+	for k, v := range data {
+		if element == v {
+			return k
+		}
+	}
+	return -1
 }
