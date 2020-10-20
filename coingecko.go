@@ -104,6 +104,8 @@ func updateCache() {
 			}
 		}
 	}
+
+	cache.Timestamp = time.Now()
 }
 
 // Init populates cache with default cryptocurrency values
