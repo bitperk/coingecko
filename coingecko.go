@@ -94,6 +94,16 @@ func updateCache() {
 		log.Errorln(err)
 		return
 	}
+
+	// set missing coins market value to 0
+	for _, coin := range coinIDs {
+		if _, ok := cache.values[coin]; !ok {
+			cache.values[coin] = Value{
+				EUR: 0,
+				USD: 0,
+			}
+		}
+	}
 }
 
 // Init populates cache with default cryptocurrency values
